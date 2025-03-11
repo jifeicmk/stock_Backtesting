@@ -1,0 +1,5 @@
+baostock>=0.8.8
+pandas>=1.3.0
+numpy>=1.21.0
+TA-Lib>=0.4.24
+xlsxwriter>=3.0.0 
