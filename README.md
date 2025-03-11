@@ -12,7 +12,7 @@
 - 完整的止损和风险管理机制
 
 ## 图片示例
-<img src="./images/回测对比.png" alt="描述图片"> 
+<img src="./images/策略对比.png" alt="描述图片"> 
 <img src="./images/交易记录.png" alt="描述图片"> 
 
 ## 支持的策略
