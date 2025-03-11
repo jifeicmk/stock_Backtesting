@@ -113,6 +113,16 @@ class BaseStrategy:
                         max_drawdown = current_drawdown
                         self.drawdown_start = self.current_drawdown_start
                         self.drawdown_end = trade['date']
+        
+        # 确保回撤的开始时间总是在结束时间之前
+        if self.drawdown_start and self.drawdown_end:
+            # 解析日期字符串为日期对象进行比较
+            start_date = self.parse_date(self.drawdown_start)
+            end_date = self.parse_date(self.drawdown_end)
+            
+            # 如果开始日期在结束日期之后，交换它们
+            if start_date > end_date:
+                self.drawdown_start, self.drawdown_end = self.drawdown_end, self.drawdown_start
 
         win_rate = (sum(profits) / len(profits) * 100) if profits else 0
         avg_profit = ((self.capital - self.initial_capital) / len(profits)) if profits else 0
@@ -126,6 +136,15 @@ class BaseStrategy:
             'max_drawdown': max_drawdown,
             'drawdown_period': f"{self.drawdown_start} 至 {self.drawdown_end}" if self.drawdown_start else "无显著回撤"
         }
+
+    def parse_date(self, date_str):
+        """解析日期字符串为可比较的日期对象"""
+        try:
+            from datetime import datetime
+            return datetime.strptime(date_str, '%Y-%m-%d')
+        except:
+            # 如果转换失败，返回原始字符串
+            return date_str
 
     def print_performance(self):
         """打印策略表现"""

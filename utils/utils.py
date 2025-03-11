@@ -84,7 +84,24 @@ class ExcelExporter:
                 for strategy in strategies:
                     perf = strategy.calculate_performance()
                     total_profit = strategy.capital - strategy.initial_capital
-                    return_rate = (total_profit / strategy.initial_capital) * 100  # 正确计算收益率
+                    return_rate = (total_profit / strategy.initial_capital) * 100
+                    
+                    # 确保回撤日期是有效的
+                    drawdown_start = strategy.drawdown_start if hasattr(strategy, 'drawdown_start') and strategy.drawdown_start else '无回撤'
+                    drawdown_end = strategy.drawdown_end if hasattr(strategy, 'drawdown_end') and strategy.drawdown_end else '无回撤'
+                    
+                    # 尝试解析日期字符串
+                    try:
+                        if drawdown_start != '无回撤' and drawdown_end != '无回撤':
+                            start_date_obj = datetime.strptime(drawdown_start, '%Y-%m-%d')
+                            end_date_obj = datetime.strptime(drawdown_end, '%Y-%m-%d')
+                            
+                            # 确保开始日期在结束日期之前
+                            if start_date_obj > end_date_obj:
+                                drawdown_start, drawdown_end = drawdown_end, drawdown_start
+                    except:
+                        # 如果解析失败，使用默认值
+                        pass
                     
                     performance_data.append({
                         '策略名称': strategy.name,
@@ -92,11 +109,11 @@ class ExcelExporter:
                         '总收益': total_profit,
                         '收益率(%)': return_rate,
                         '交易次数': perf['total_trades'],
-                        '胜率(%)': perf['win_rate'],  # 直接使用原始胜率值
+                        '胜率(%)': perf['win_rate'],
                         '平均每笔盈亏': perf['avg_profit'],
-                        '最大回撤(%)': perf['max_drawdown'],  # 直接使用原始回撤值
-                        '回撤开始时间': strategy.drawdown_start if hasattr(strategy, 'drawdown_start') else '无回撤',
-                        '回撤结束时间': strategy.drawdown_end if hasattr(strategy, 'drawdown_end') else '无回撤'
+                        '最大回撤(%)': perf['max_drawdown'],
+                        '回撤开始时间': drawdown_start,
+                        '回撤结束时间': drawdown_end
                     })
                 
                 # 添加回测信息到表头
@@ -129,7 +146,27 @@ class ExcelExporter:
                 worksheet.set_column('F:F', 10, percent_format)  # 胜率
                 worksheet.set_column('G:G', 15, money_format)  # 平均每笔盈亏
                 worksheet.set_column('H:H', 12, percent_format)  # 最大回撤
-                worksheet.set_column('I:J', 20, date_format)  # 回撤时间
+                
+                # 特别处理回撤时间列，将日期格式化
+                for row_idx, row in enumerate(performance_data):
+                    try:
+                        if row['回撤开始时间'] != '无回撤':
+                            date_obj = datetime.strptime(row['回撤开始时间'], '%Y-%m-%d')
+                            worksheet.write_datetime(row_idx + len(header_df) + 2, 8, date_obj, date_format)
+                        else:
+                            worksheet.write_string(row_idx + len(header_df) + 2, 8, '无回撤')
+                            
+                        if row['回撤结束时间'] != '无回撤':
+                            date_obj = datetime.strptime(row['回撤结束时间'], '%Y-%m-%d')
+                            worksheet.write_datetime(row_idx + len(header_df) + 2, 9, date_obj, date_format)
+                        else:
+                            worksheet.write_string(row_idx + len(header_df) + 2, 9, '无回撤')
+                    except:
+                        # 如果日期解析失败，使用普通文本
+                        pass
+                
+                # 设置列宽
+                worksheet.set_column('I:J', 20)  # 回撤时间
                 
                 # 3. 为每个策略创建交易记录sheet
                 for strategy in strategies:

@@ -54,6 +54,21 @@ def run_strategy(strategy, start_date, end_date, stock_code, data=None):
         
         if signal != 'HOLD':
             strategy.execute_trade(date, price, signal, volume)
+    
+    # 确保回撤计算正确 - 在回测结束后验证回撤日期顺序
+    if hasattr(strategy, 'drawdown_start') and hasattr(strategy, 'drawdown_end'):
+        if strategy.drawdown_start and strategy.drawdown_end:
+            try:
+                from datetime import datetime
+                start_date_obj = datetime.strptime(strategy.drawdown_start, '%Y-%m-%d')
+                end_date_obj = datetime.strptime(strategy.drawdown_end, '%Y-%m-%d')
+                
+                # 如果开始日期在结束日期之后，交换它们
+                if start_date_obj > end_date_obj:
+                    strategy.drawdown_start, strategy.drawdown_end = strategy.drawdown_end, strategy.drawdown_start
+            except:
+                # 如果日期解析失败，保持原状
+                pass
 
 def main():
     parser = argparse.ArgumentParser(description='股票策略回测系统')
